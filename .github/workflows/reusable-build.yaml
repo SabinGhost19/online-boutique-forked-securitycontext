@@ -11,6 +11,11 @@ on:
         required: true
         type: string
         description: "Directory containing the Dockerfile (e.g., ./src/cartservice)"
+      dockerfile:
+        required: false
+        type: string
+        default: "Dockerfile"
+        description: "Name/path of the Dockerfile relative to context_dir (default: Dockerfile)"
     secrets:
       GHCR_PAT:
         required: false # Optional if using GITHUB_TOKEN
@@ -56,6 +61,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ inputs.context_dir }}
+          file: ${{ inputs.context_dir }}/${{ inputs.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
