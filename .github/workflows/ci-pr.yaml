@@ -17,10 +17,8 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      packages: write
-      security-events: write
+      contents: read        # for checkout
+      pull-requests: read   # for paths-filter on PRs
     outputs:
       services: ${{ steps.filter.outputs.changes }}
     steps:
@@ -47,7 +45,8 @@ jobs:
 
   build:
     needs: changes
-    if: ${{ needs.changes.outputs.services != '[]' && needs.changes.outputs.services != '' }}
+    # Only run if there arent't changes, i want to let it run for now, debugging purpose
+    if: ${{ needs.changes.outputs.services == '[]' && needs.changes.outputs.services == '' }}
     permissions:
       contents: read
       packages: write
@@ -61,4 +60,18 @@ jobs:
     with:
       service: ${{ matrix.service }}
       context_dir: ./src/${{ matrix.service }}
+    secrets: inherit
+
+  # ===========================================================================
+  # DEPLOY JOB (GitOps Write-Back)
+  # ===========================================================================
+  # This job runs ONLY on push to 'main' (not on PRs) and only if builds succeeded.
+  # It calls the reusable deploy workflow.
+  # ===========================================================================
+  deploy:
+    needs: build
+    # Only run on push to main
+    ##disable this for now, for debugging purpose
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/reusable-deploy.yaml
     secrets: inherit

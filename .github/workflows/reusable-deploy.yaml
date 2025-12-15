@@ -1,0 +1,70 @@
+name: Reusable Deploy (GitOps Write-Back)
+
+on:
+  workflow_call:
+    secrets:
+      INFRA_REPO_PAT:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout the Infrastructure Repository
+      - name: Checkout Infra Repo
+        uses: actions/checkout@v4
+        with:
+          repository: SabinGhost19/online-boutique-secured-infra
+          # We need a Personal Access Token (PAT) to push to another repo
+          token: ${{ secrets.INFRA_REPO_PAT }}
+          path: online-boutique-secured-infra
+
+      # 2. Install yq (YAML processor)
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      # 3. Update Image Tag in values-develop.yaml
+      # We use the GITHUB_SHA (short) as the tag, ensuring immutability.
+      - name: Update Image Tag
+        run: |
+          cd online-boutique-secured-infra/online-boutique/helm-chart
+          
+          # Get short SHA
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          
+          echo "Updating image tag to: $SHORT_SHA"
+          
+          # Update the global 'images.tag' value
+          yq -i ".images.tag = \"$SHORT_SHA\"" values-develop.yaml
+          
+          # Also update the repository to point to GHCR instead of Google
+          # Assuming your GHCR format is ghcr.io/OWNER/REPO
+          # We need to strip the service name from the end if the chart expects a base repo
+          # But the chart seems to append service name.
+          # Let's set the base repository.
+          # REPO: ghcr.io/sabinghost19/online-boutique-src
+          
+          # NOTE: Adjust 'sabinghost19' to your actual GitHub username/org lowercase
+          yq -i ".images.repository = \"ghcr.io/${{ github.repository_owner }}/online-boutique-src\"" values-develop.yaml
+          
+          # Verify changes
+          cat values-develop.yaml
+
+      # 4. Commit and Push Changes
+      - name: Commit and Push
+        run: |
+          cd online-boutique-secured-infra
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          git add .
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(ci): update image tag to ${GITHUB_SHA::7}"
+            git push
+          fi
