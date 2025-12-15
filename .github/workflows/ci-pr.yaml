@@ -15,7 +15,10 @@ on:
 
 jobs:
   build:
-
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     strategy:
       matrix:
         service:
