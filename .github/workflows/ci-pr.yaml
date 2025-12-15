@@ -19,12 +19,14 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      package: write
+      security-events: write
     outputs:
       services: ${{ steps.filter.outputs.changes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        
       - name: Check for changes
         uses: dorny/paths-filter@v3
         id: filter
