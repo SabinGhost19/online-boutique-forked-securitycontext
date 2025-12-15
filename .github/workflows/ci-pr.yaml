@@ -48,6 +48,10 @@ jobs:
   build:
     needs: changes
     if: ${{ needs.changes.outputs.services != '[]' && needs.changes.outputs.services != '' }}
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     strategy:
       matrix:
         service: ${{ fromJSON(needs.changes.outputs.services) }}
