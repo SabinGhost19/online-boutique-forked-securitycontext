@@ -39,8 +39,8 @@ jobs:
     uses: ./.github/workflows/reusable-build.yaml
     with:
       service: ${{ matrix.service }}
-      context_dir: ./src/${{ matrix.service }}
-      dockerfile: ${{ matrix.service == 'cartservice' && 'src/Dockerfile' || 'Dockerfile' }}
+      context_dir: ${{ matrix.service == 'cartservice' && './src/cartservice/src' || format('./src/{0}', matrix.service) }}
+      dockerfile: 'Dockerfile'
     secrets: inherit
 
   # ===========================================================================
